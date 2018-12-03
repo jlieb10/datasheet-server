@@ -7,7 +7,6 @@ cache:
 before_script:
   - npm install -g yarn
   - cp ./src/example.config.js ./src/config.js
-  - printenv
 install:
   - yarn
 script:
