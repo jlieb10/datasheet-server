@@ -24,7 +24,7 @@ export default callback => {
   Promise.all(fetchers.map(authenticate))
     .then(() => {
       console.log(`===================`)
-      console.log(`grant access to: ${email}`)
+      console.log(`grant access to: ${process.env.SERVICE_ACCOUNT_EMAIL}`)
       console.log(`===================`)
 
       // NB: reformat fetchers as config for controller
