@@ -4,12 +4,10 @@ node_js:
 cache:
   directories:
     - node_modules
-env:
-  SERVICE_ACCOUNT_EMAIL=$SERVICE_ACCOUNT_EMAIL
-  SERVICE_ACCOUNT_PRIVATE_KEY=$SERVICE_ACCOUNT_PRIVATE_KEY
 before_script:
   - npm install -g yarn
   - cp ./src/example.config.js ./src/config.js
+  - printenv
 install:
   - yarn
 script:
