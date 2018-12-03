@@ -4,12 +4,14 @@ import Controller from './lib/Controller'
 import config from './config'
 
 const { googleSheets } = config
-const { sheets, privateKey, email } = googleSheets
+const { sheets } = googleSheets
+const email = process.env.SERVICE_ACCOUNT_EMAIL
+const key = process.env.SERVICE_ACCOUNT_PRIVATE_KEY
 
 function authenticate (_fetcher) {
-return _fetcher.fetcher.authenticate(process.env.SERVICE_ACCOUNT_EMAIL, process.env.SERVICE_ACCOUNT_PRIVATE_KEY).then(msg => {
-console.log(msg)
-  return true
+  return _fetcher.fetcher.authenticate(email, key).then(msg => {
+    console.log(msg)
+    return true
   })
 }
 
@@ -24,7 +26,7 @@ export default callback => {
   Promise.all(fetchers.map(authenticate))
     .then(() => {
       console.log(`===================`)
-      console.log(`grant access to: ${process.env.SERVICE_ACCOUNT_EMAIL}`)
+      console.log(`grant access to: ${email}`)
       console.log(`===================`)
 
       // NB: reformat fetchers as config for controller
