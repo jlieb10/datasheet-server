@@ -10,11 +10,12 @@ var server_exited = false;
 
 test.before.cb(t => {
   console.log("launching server...")
-  server_proc = child_process.spawn('yarn', ['dev'], {
-    cwd: '.',
-    stdio: 'ignore'
-  });
-
+  // server_proc = child_process.spawn('yarn', ['dev'], {
+  //   cwd: '.',
+  //   stdio: 'ignore'
+  // });
+  server_proc = child_process.spawn('yarn', ['dev']);
+  
   server_proc.on('exit', function(code, signal) {
     server_exited = true;
   });

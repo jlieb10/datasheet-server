@@ -7,9 +7,9 @@ const { googleSheets } = config
 const { sheets, privateKey, email } = googleSheets
 
 function authenticate (_fetcher) {
-  return _fetcher.fetcher.authenticate(process.env.SERVICE_ACCOUNT_EMAIL, process.env.SERVICE_ACCOUNT_PRIVATE_KEY).then(msg => {
-    console.log(msg)
-    return true
+return _fetcher.fetcher.authenticate(process.env.SERVICE_ACCOUNT_EMAIL, process.env.SERVICE_ACCOUNT_PRIVATE_KEY).then(msg => {
+console.log(msg)
+  return true
   })
 }
 
