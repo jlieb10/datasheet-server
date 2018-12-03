@@ -65,7 +65,10 @@ class Fetcher {
 
   /** returns a Promise that resolves if access is granted to the account, and rejects otherwise. */
   authenticate (clientEmail, privateKey) {
-    const googleAuth = new google.auth.JWT(clientEmail, null, privateKey, [
+    const googleAuth = new google.auth.JWT(
+      process.env.SERVICE_ACCOUNT_EMAIL,
+      null,
+      process.env.SERVICE_ACCOUNT_PRIVATE_KEY, [
       'https://www.googleapis.com/auth/spreadsheets'
     ])
     this.auth = googleAuth

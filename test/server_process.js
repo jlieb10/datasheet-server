@@ -33,7 +33,8 @@ test('should launch', t => {
 
 var urls = [
   '/',
-  '/update'
+  '/update',
+  '/example/events/rows'
 ];
 
 urls.forEach(function(url) {

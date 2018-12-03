@@ -6,6 +6,8 @@ import config from './config'
 const { googleSheets } = config
 const { sheets, privateKey, email } = googleSheets
 
+require('dotenv').config();
+
 function authenticate (_fetcher) {
   return _fetcher.fetcher.authenticate(email, privateKey).then(msg => {
     console.log(msg)
