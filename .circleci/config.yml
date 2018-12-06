@@ -33,7 +33,6 @@ jobs:
             - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
 
-      - run: printenv
       - run: yarn build
       - run: yarn lint
       - run: yarn test

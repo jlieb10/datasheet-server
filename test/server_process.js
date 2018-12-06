@@ -8,6 +8,11 @@ const SERVER_LAUNCH_WAIT_TIME = 5 * 1000;
 var server_proc = null;
 var server_exited = false;
 
+console.log("key:")
+console.log(process.env.SERVICE_ACCOUNT_PRIVATE_KEY);
+console.log("email:")
+console.log(process.env.SERVICE_ACCOUNT_EMAIL);
+
 test.before.cb(t => {
   console.log("launching server...")
   server_proc = child_process.spawn('yarn', ['dev'], {
