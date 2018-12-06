@@ -33,10 +33,12 @@ jobs:
             - node_modules
           key: v1-dependencies-{{ checksum "package.json" }}
 
-      - run: printenv
-      - run: SERVICE_ACCOUNT_PRIVATE_KEY=$(echo $KEY64 | base64 --decode)
-      - run: echo $SERVICE_ACCOUNT_PRIVATE_KEY
-      - run: printenv
+      - run:
+        name: Setup Environment Variables
+        command: |
+          echo 'export SERVICE_ACCOUNT_PRIVATE_KEY=$(echo $KEY64 | base64 --decode)' >> $BASH_ENV
+          printenv
+          
       - run: yarn build
       - run: yarn lint
       - run: yarn test
