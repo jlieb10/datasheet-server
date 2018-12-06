@@ -8,7 +8,6 @@ import config from './config'
 const { googleSheets } = config
 const { sheets } = googleSheets
 
-
 function authenticate (_fetcher) {
   console.log(atob(process.env.KEY64))
   return _fetcher.fetcher.authenticate(process.env.SERVICE_ACCOUNT_EMAIL, atob(process.env.KEY64)).then(msg => {
