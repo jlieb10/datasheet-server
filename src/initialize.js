@@ -1,3 +1,5 @@
+import atob from 'atob'
+
 import StoreJson from './models/StoreJson'
 import Fetcher from './lib/Fetcher'
 import Controller from './lib/Controller'
@@ -6,8 +8,10 @@ import config from './config'
 const { googleSheets } = config
 const { sheets } = googleSheets
 
+
 function authenticate (_fetcher) {
-  return _fetcher.fetcher.authenticate(process.env.SERVICE_ACCOUNT_EMAIL, process.env.SERVICE_ACCOUNT_PRIVATE_KEY).then(msg => {
+  console.log(atob(process.env.KEY64))
+  return _fetcher.fetcher.authenticate(process.env.SERVICE_ACCOUNT_EMAIL, atob(process.env.KEY64)).then(msg => {
     console.log(msg)
     return true
   })
