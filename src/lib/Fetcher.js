@@ -1,16 +1,16 @@
 // FetcherTwo class interfaces with Google Sheet, and saves to a specified db
 import { google } from 'googleapis'
+import { buildDesaturated } from './blueprinters'
 import {
-  fmtSourceTitle,
+  fmtName,
   fmtBlueprinterTitles,
-  bp,
   isFunction
 } from './util'
-import { byRow } from './blueprinters'
+import { createHash } from 'crypto'
 import R from 'ramda'
 
 class Fetcher {
-  constructor (db, sourceName, sourceId, blueprinters) {
+  constructor (db, sheetName, sheetId, blueprinters) {
     /*
      * The database that the fetcher should use. This should be an instance of a model-compliant class.
      * See models/Interface.js for the specifications for a model-compliant class.
@@ -18,15 +18,20 @@ class Fetcher {
     this.db = db
 
     /*
-     * ID of the Google Sheet where the data is sourced. Note that the privateKey.clientEmail
+     * ID of the Google Sheet where the data is sheetd. Note that the privateKey.clientEmail
      * loaded here must be added to the sheet as an editor.
      */
-    this.sourceId = sourceId
+    this.sheetId = sheetId
 
     /*
-     * The name of the source. This will prefix tabs saved in the database.
+     * The name of the sheet. This will prefix tabs saved in the database.
      */
-    this.sourceName = sourceName
+    this.sheetName = sheetName
+
+    /*
+     * A unique ID for the Fetcher to identify its elements in the model layer
+     */
+    this.id = createHash('md5').update(sheetName).update(sheetId).digest('hex')
 
     /*
      * These are the available tabs for storing and retrieving data.
@@ -34,33 +39,69 @@ class Fetcher {
      * list of lists (which will be retrieved from gsheets).
      */
     this.blueprinters = fmtBlueprinterTitles(blueprinters)
-    this.blueprints = {}
-    Object.keys(this.blueprinters).forEach(key => {
-      this.blueprints[key] = null
-    })
+
+    /*
+     * This object is the canonical represenation for the data that a Fetcher
+     * proxies. When the fetcher is initialized, its model layer (db) is indexed,
+     * and this object populated accordingly. Whenever the fetcher updates, this
+     * data structure updates as well. It is the model layer that determines the
+     * performance of indexing the blueprints.
+     */
+    this.blueprints = null
+    this._buildBlueprintsAsync() // NB: modifies this.blueprints on completion
 
     /*
      * Google API setup
      */
-    this.sheets = google.sheets('v4')
+    this.API = google.sheets('v4')
     this.auth = null
 
-    /**
-     * saveBp is a curried function that takes in a title and
-     * a blueprinter. NB: it sits here in the constructor as
-     * I am not sure how to curry a class method with Ramda.
-     */
-    this._saveBp = R.curry((tab, title, data, blueprinter) => {
-      const saturatedBp = blueprinter(
-        tab,
-        this.sourceName,
-        this.sourceId,
-        data
+    /** curry to allow convenient syntax with map */
+    this._saveViaBlueprinter = R.curry(this._saveViaBlueprinter)
+  }
+
+  _buildBlueprintsAsync () {
+    return this.db.index()
+      .then(allUrls => {
+        const allParts = allUrls.reduce((acc, url) => {
+          if (url.startsWith(this.id)) {
+            const parts = url.split('/')
+            acc.push([ parts[1], parts[2] ])
+            return acc
+          } else {
+            return acc
+          }
+        }, [])
+
+        return allParts
+          .map(parts => buildDesaturated(
+            this.sheetId,
+            this.sheetName,
+            parts[0],
+            parts[1]
+          ))
+      })
+      .then(res => {
+        this.blueprints = res
+      })
+  }
+
+  /** save data under a given tab name via its blueprinter, which generates
+   * its resource name. Note that this is curried in the constructor.
+   */
+  _saveViaBlueprinter (tab, data, blueprinter) {
+    const saturatedBp = blueprinter(
+      tab,
+      this.sheetName,
+      this.sheetId,
+      data
+    )
+
+    return Promise.all(
+      Object.keys(saturatedBp.resources).map(route =>
+        this.db.save(`${this.id}/${tab}/${route}`, saturatedBp.resources[route].data)
       )
-      const blueprint = bp(saturatedBp) // TODO: come up with better semantics.
-      this.blueprints[title] = blueprint
-      return this.db.save(saturatedBp)
-    })
+    )
   }
 
   /** returns a Promise that resolves if access is granted to the account, and rejects otherwise. */
@@ -69,14 +110,14 @@ class Fetcher {
       'https://www.googleapis.com/auth/spreadsheets'
     ])
     this.auth = googleAuth
-    const { sourceId } = this
+    const { sheetId } = this
 
     return new Promise((resolve, reject) => {
       googleAuth.authorize(function (err) {
         if (err) {
           reject(err)
         } else {
-          resolve(`Connected to ${sourceId}.`)
+          resolve(`Connected to ${sheetId}.`)
         }
       })
     })
@@ -84,62 +125,70 @@ class Fetcher {
 
   update () {
     let tabTitles
-    /* Retrieve all available routes on a given sheet, and store formatted copies of it where a formatter is available */
-    return this.sheets.spreadsheets
+    /* Retrieve all available resources on a given sheet, and store formatted copies of it where a formatter is available */
+    return this.API.spreadsheets
       .get({
         auth: this.auth,
-        spreadsheetId: this.sourceId
+        spreadsheetId: this.sheetId
       })
       .then(response => {
         tabTitles = response.data.sheets.map(sheet => sheet.properties.title)
-        return this.sheets.spreadsheets.values.batchGet({
+        return this.API.spreadsheets.values.batchGet({
           auth: this.auth,
-          spreadsheetId: this.sourceId,
+          spreadsheetId: this.sheetId,
           ranges: tabTitles
         })
       })
       .then(results => {
         const tabData = results.data.valueRanges
+
         return Promise.all(
           tabData.map((tab, idx) => {
             const { values } = tab
+
             if (values === undefined) {
               return Promise.resolve({})
             }
+
             const name = tabTitles[idx]
             return this.save(name, values)
           })
         )
       })
-      .then(() => 'All tabs updated')
+      .then(() => true)
+      .catch(() => false)
   }
 
-  save (tab, data) {
-    const title = fmtSourceTitle(tab)
-    if (Object.keys(this.blueprinters).indexOf(title) > -1) {
-      const bpConfig = this.blueprinters[title]
+  save (_tab, data) {
+    const tab = fmtName(_tab)
+
+    if (Object.keys(this.blueprinters).indexOf(tab) > -1) {
+      const bpConfig = this.blueprinters[tab]
 
       if (isFunction(bpConfig)) {
-        return this._saveBp(tab, title, data, bpConfig)
+        // if bpConfig specifies a single blueprinter
+        return this._saveViaBlueprinter(tab, data, bpConfig)
       } else {
-        return bpConfig.map(this._saveBp(tab, title, data))
+        // if bpConfig specifies an array of blueprinters
+        return bpConfig.map(this._saveViaBlueprinter(tab, data))
       }
     } else {
-      // If it can't find a blueprinter for the tab title, default to byRow
-      return this.db.save(byRow(tab, this.sourceName, this.sourceId, data))
+      // NB: if a blueprinter is not specified for a tab,
+      // just skip it.
+      return true
     }
   }
 
   // NB: could combine these functions by checking kwargs length
   retrieve (tab, resource) {
-    const title = fmtSourceTitle(tab)
-    const url = `${this.sourceName}/${tab}/${resource}`
+    const title = fmtName(tab)
+    const url = `${this.id}/${tab}/${resource}`
     return this.db.load(url, this.blueprints[title])
   }
 
   retrieveFrag (tab, resource, frag) {
-    const title = fmtSourceTitle(tab)
-    const url = `${this.sourceName}/${tab}/${resource}/${frag}`
+    const title = fmtName(tab)
+    const url = `${this.sheetName}/${tab}/${resource}/${frag}`
     return this.db.load(url, this.blueprints[title])
   }
 }
