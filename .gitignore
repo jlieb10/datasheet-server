@@ -9,3 +9,4 @@
 *service-account-key\.json
 src/config.js
 /yarn-error.log
+*.pem
