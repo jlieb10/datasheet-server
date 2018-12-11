@@ -57,7 +57,7 @@ class Fetcher {
     this.auth = null
 
     /** curry to allow convenient syntax with map */
-    this._saveViaBlueprinter = R.curry(this._saveViaBlueprinter)
+    this._saveViaBlueprinter = R.curry(this._saveViaBlueprinter.bind(this))
   }
 
   _buildBlueprintsAsync () {
@@ -155,6 +155,7 @@ class Fetcher {
           })
         )
       })
+      .then(this._buildBlueprintsAsync())
       .then(() => true)
       .catch(() => false)
   }
