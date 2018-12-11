@@ -11,6 +11,11 @@
     "test-watch": "ava --watch",
     "test": "ava --verbose"
   },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm test"
+    }
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/developit/express-es6-rest-api.git"
@@ -18,7 +23,6 @@
   "author": "Jason Miller <jason@developit.ca>",
   "license": "MIT",
   "dependencies": {
-    "atob": "^2.1.2",
     "body-parser": "^1.13.3",
     "compression": "^1.5.2",
     "cors": "^2.8.5",
@@ -41,6 +45,7 @@
     "@babel/preset-env": "^7.1.0",
     "@babel/register": "^7.0.0",
     "ava": "1.0.0-beta.8",
+    "husky": "^1.2.0",
     "nodemon": "1.18.7",
     "standard": "^12.0.1"
   },
