@@ -10,11 +10,11 @@
     "lint": "standard \"src/**/*.js\" \"test/**/*.js\"",
     "test-watch": "ava --watch",
     "test": "ava --verbose",
-    "travis-encrypt": "./scripts/encrypt.sh"
+    "travis-encrypt": ". ./scripts/encrypt.sh"
   },
   "husky": {
     "hooks": {
-      "pre-push": "./scripts/check-branch.sh && yarn lint && yarn test"
+      "pre-push": ". ./scripts/check-branch.sh && yarn lint && yarn test"
     }
   },
   "repository": {
