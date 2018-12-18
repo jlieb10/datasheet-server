@@ -1,4 +1,4 @@
-# saturates env variables
+# saturates ENCRYPT env variables
 source .env 
 export ENCRYPT
 
